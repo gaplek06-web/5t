@@ -41,7 +41,6 @@
             width: 100%;
             height: 100%;
             max-width: 500px;
-            /* Pastikan tidak melebihi tinggi layar */
             height: 100vh;
             background: linear-gradient(to bottom, var(--sky-blue) 0%, #e3f7ff 50%, var(--grass-green) 100%);
             position: relative;
@@ -117,8 +116,7 @@
             backdrop-filter: blur(5px);
         }
 
-        .home-btn {
-            background: #ff6b6b;
+        .ui-btn {
             color: white;
             border: none;
             border-radius: 50%;
@@ -129,8 +127,12 @@
             align-items: center;
             font-size: 1.1rem;
             cursor: pointer;
-            box-shadow: 0 3px 0 #ee5253;
+            transition: transform 0.1s;
         }
+        .ui-btn:active { transform: scale(0.9); }
+
+        .home-btn { background: #ff6b6b; box-shadow: 0 3px 0 #ee5253; }
+        .resize-btn { background: #4dabf7; box-shadow: 0 3px 0 #339af0; }
 
         #lives-container {
             display: flex;
@@ -154,12 +156,12 @@
             margin-top: -5px;
         }
 
-        /* --- Area Karakter (Disesuaikan agar fleksibel) --- */
+        /* --- Area Karakter --- */
         #character-area {
-            flex: 1; /* Mengambil sisa ruang */
+            flex: 1;
             display: flex;
             justify-content: center;
-            align-items: center; /* Karakter di tengah area atas */
+            align-items: center;
             width: 100%;
             position: relative;
             min-height: 120px;
@@ -201,7 +203,7 @@
             font-weight: 900;
         }
 
-        /* --- Tombol Jawaban (Disesuaikan agar tidak terpotong) --- */
+        /* --- Tombol Jawaban --- */
         #answers-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -209,7 +211,7 @@
             width: 100%;
             padding: 15px;
             z-index: 10;
-            margin-bottom: 5px; /* Memberi jarak dari bawah layar */
+            margin-bottom: 5px;
         }
 
         .answer-btn {
@@ -297,7 +299,8 @@
                 <span class="heart">❤️</span>
             </div>
             <div class="header-right">
-                <button class="home-btn" onclick="goHome()">🏠</button>
+                <button class="ui-btn resize-btn" onclick="fixLayout()" title="Sesuaikan Layar">⛶</button>
+                <button class="ui-btn home-btn" onclick="goHome()" title="Beranda">🏠</button>
                 <div class="stat-box">🪙 <span id="val-score">0</span></div>
             </div>
         </div>
@@ -355,6 +358,7 @@
         };
 
         const dom = {
+            container: document.getElementById('game-container'),
             character: document.getElementById('character'),
             qBox: document.getElementById('question-box'),
             score: document.getElementById('val-score'),
@@ -367,6 +371,20 @@
             resTitle: document.getElementById('res-title'),
             resEmoji: document.getElementById('res-emoji')
         };
+
+        // Fungsi untuk memperbaiki layout
+        function fixLayout() {
+            window.scrollTo(0, 0);
+            document.body.style.height = window.innerHeight + 'px';
+            dom.container.style.height = window.innerHeight + 'px';
+            // Efek feedback visual singkat
+            dom.container.style.opacity = '0.5';
+            setTimeout(() => dom.container.style.opacity = '1', 100);
+        }
+
+        // Jalankan fix layout saat layar diubah atau diputar
+        window.addEventListener('resize', fixLayout);
+        window.addEventListener('orientationchange', () => setTimeout(fixLayout, 200));
 
         function selectChar(c, el) {
             state.char = c;
@@ -395,6 +413,7 @@
             });
 
             nextQuestion();
+            fixLayout();
         }
 
         function nextQuestion() {
