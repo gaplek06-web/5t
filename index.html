@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Dunia Matematika Ceria</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --sky-blue: #a2e2ff;
+            --grass-green: #67e05f;
+            --sun-yellow: #FFD700;
+            --candy-pink: #FF69B4;
+            --bright-blue: #4dabf7;
+            --leaf-green: #40c057;
+            --soft-white: rgba(255, 255, 255, 0.9);
+            --danger-red: #ff4757;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', 'Comic Sans MS', 'Chalkboard SE', cursive;
+            background: #2c3e50;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        #game-container {
+            width: 100%;
+            height: 100%;
+            max-width: 500px;
+            max-height: 900px;
+            background: linear-gradient(to bottom, var(--sky-blue) 0%, #e3f7ff 50%, var(--grass-green) 100%);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+            border: 4px solid #fff;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        @media (min-width: 768px) {
+            #game-container {
+                height: 90vh;
+                border-radius: 40px;
+                border: 10px solid #fff;
+            }
+        }
+
+        /* --- Dekorasi Dunia --- */
+        .decoration-bottom {
+            position: absolute;
+            bottom: -10px;
+            width: 110%;
+            height: 80px;
+            background: #51cf66;
+            border-radius: 50% 50% 0 0;
+            z-index: 5;
+        }
+
+        .cloud {
+            position: absolute;
+            background: white;
+            width: 100px;
+            height: 35px;
+            border-radius: 50px;
+            opacity: 0.8;
+            filter: blur(2px);
+            animation: moveClouds var(--speed) linear infinite;
+        }
+        @keyframes moveClouds {
+            from { left: -120px; }
+            to { left: 110%; }
+        }
+
+        /* --- Header UI --- */
+        .ui-header {
+            width: 100%;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 20;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-box {
+            background: var(--soft-white);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #333;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            backdrop-filter: blur(5px);
+        }
+
+        .home-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #ee5253;
+            transition: transform 0.1s;
+        }
+        .home-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #ee5253;
+        }
+
+        #lives-container {
+            display: flex;
+            gap: 5px;
+            font-size: 1.5rem;
+        }
+
+        .heart {
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));
+            display: inline-block;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .heart.lost {
+            transform: scale(0) rotate(45deg);
+            opacity: 0;
+        }
+        .heart.beat {
+            animation: heartBeat 1s infinite;
+        }
+        @keyframes heartBeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        .level-badge {
+            background: var(--candy-pink);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 900;
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        /* --- Area Karakter --- */
+        #character-area {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            width: 100%;
+            padding-bottom: 40px;
+            position: relative;
+        }
+
+        #character {
+            font-size: 100px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 15;
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.1));
+        }
+
+        .idle-anim { animation: idle 2.5s infinite ease-in-out; }
+        @keyframes idle { 
+            0%, 100% { transform: translateY(0) rotate(0deg); } 
+            50% { transform: translateY(-15px) rotate(2deg); } 
+        }
+        
+        .jump-anim { animation: jump 0.6s ease-out; }
+        @keyframes jump { 
+            0% { transform: scale(1) translateY(0); }
+            30% { transform: scale(1.2, 0.8) translateY(0); }
+            50% { transform: scale(1) translateY(-120px) rotate(15deg); }
+            100% { transform: scale(1) translateY(0); }
+        }
+
+        .shake-anim { animation: shake 0.5s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-20px); } 40%, 80% { transform: translateX(20px); } }
+
+        /* --- Panel Soal --- */
+        #question-box {
+            background: var(--soft-white);
+            padding: 20px 30px;
+            border-radius: 30px;
+            font-size: 3rem;
+            margin: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            border: 6px solid var(--bright-blue);
+            min-width: 220px;
+            text-align: center;
+            z-index: 10;
+            color: #2c3e50;
+            font-weight: 900;
+        }
+
+        /* --- Tombol Jawaban --- */
+        #answers-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            width: 90%;
+            padding: 10px 10px 30px 10px;
+            z-index: 10;
+        }
+
+        .answer-btn {
+            padding: 20px;
+            font-size: 2.2rem;
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-weight: 900;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.15);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+        }
+        .answer-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.15); }
+
+        /* --- Layar --- */
+        .screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, var(--bright-blue), #339af0);
+            z-index: 100; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center; padding: 30px;
+        }
+        .hidden { display: none !important; }
+
+        .big-text { font-size: 3rem; color: white; text-shadow: 0 10px 20px rgba(0,0,0,0.2); margin-bottom: 20px; font-weight: 900; }
+        
+        .action-btn {
+            padding: 18px 45px; font-size: 1.6rem; background: #ff922b;
+            color: white; border: none; border-radius: 50px; cursor: pointer;
+            box-shadow: 0 8px 0 #e67e22; font-weight: 900;
+        }
+
+        #feedback-text {
+            position: absolute;
+            top: 45%;
+            font-size: 3rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            pointer-events: none;
+            z-index: 30;
+            opacity: 0;
+            transition: 0.4s;
+            width: 100%;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- Awan -->
+        <div class="cloud" style="top: 8%; --speed: 40s; width: 110px;"></div>
+        <div class="cloud" style="top: 22%; --speed: 28s; left: 35%; width: 75px;"></div>
+        <div class="decoration-bottom"></div>
+
+        <!-- Layar Mulai -->
+        <div id="start-screen" class="screen">
+            <div id="start-char" style="font-size: 8rem; margin-bottom: 20px; animation: idle 2s infinite ease-in-out;">🦁</div>
+            <h1 class="big-text">DUNIA<br>MATEMATIKA</h1>
+            <div id="char-selection" style="font-size: 3.5rem; display: flex; gap: 20px; margin-bottom: 35px; background: rgba(255,255,255,0.2); padding: 10px; border-radius: 25px;">
+                <span style="cursor:pointer;" onclick="selectChar('🦁', this)">🦁</span>
+                <span style="cursor:pointer;" onclick="selectChar('🤖', this)">🤖</span>
+                <span style="cursor:pointer;" onclick="selectChar('🐰', this)">🐰</span>
+            </div>
+            <button class="action-btn" onclick="startGame()">MAIN SEKARANG! 🚀</button>
+        </div>
+
+        <!-- Layar Hasil -->
+        <div id="result-screen" class="screen hidden">
+            <div id="res-emoji" style="font-size: 7rem; margin-bottom: 10px;">🏆</div>
+            <h1 id="res-title" class="big-text">GAME OVER!</h1>
+            <div id="res-stars" style="font-size: 3.5rem; margin-bottom: 15px;">⭐⭐⭐</div>
+            <div class="stat-box" style="font-size: 1.8rem; margin-bottom: 30px; padding: 15px 30px;">
+                Total Koin: <span id="res-score">0</span>
+            </div>
+            <button class="action-btn" onclick="startGame()">COBA LAGI 🔄</button>
+        </div>
+
+        <!-- UI Gameplay -->
+        <div class="ui-header">
+            <div id="lives-container">
+                <span class="heart beat">❤️</span>
+                <span class="heart beat">❤️</span>
+                <span class="heart beat">❤️</span>
+            </div>
+            <div class="header-right">
+                <button class="home-btn" onclick="goHome()" title="Beranda">🏠</button>
+                <div class="stat-box">🪙 <span id="val-score">0</span></div>
+            </div>
+        </div>
+
+        <div class="level-badge">LEVEL <span id="val-level">1</span></div>
+        <div id="feedback-text">Bagus!</div>
+
+        <div id="character-area">
+            <div id="character" class="idle-anim">🦁</div>
+        </div>
+
+        <div id="question-box">...</div>
+
+        <div id="answers-grid">
+            <button class="answer-btn" style="background:#5c7cfa" onclick="checkAns(this)"></button>
+            <button class="answer-btn" style="background:#f06595" onclick="checkAns(this)"></button>
+            <button class="answer-btn" style="background:#fcc419" onclick="checkAns(this)"></button>
+            <button class="answer-btn" style="background:#51cf66" onclick="checkAns(this)"></button>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            score: 0,
+            ans: 0,
+            active: false,
+            char: '🦁',
+            count: 0,
+            level: 1,
+            lives: 3,
+            maxQuestions: 50
+        };
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration, volume=0.08) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const sounds = {
+            correct: () => { playTone(523, 'sine', 0.2); setTimeout(() => playTone(659, 'sine', 0.3), 100); },
+            wrong: () => { playTone(200, 'triangle', 0.4); },
+            gameOver: () => { [400, 300, 200].forEach((f, i) => setTimeout(() => playTone(f, 'sawtooth', 0.5), i*150)); },
+            levelUp: () => { [523, 659, 783, 1046].forEach((f, i) => setTimeout(() => playTone(f, 'sine', 0.5), i*100)); }
+        };
+
+        const dom = {
+            character: document.getElementById('character'),
+            qBox: document.getElementById('question-box'),
+            score: document.getElementById('val-score'),
+            level: document.getElementById('val-level'),
+            ansBtns: document.querySelectorAll('.answer-btn'),
+            feedback: document.getElementById('feedback-text'),
+            startScreen: document.getElementById('start-screen'),
+            resultScreen: document.getElementById('result-screen'),
+            lives: document.querySelectorAll('.heart'),
+            resTitle: document.getElementById('res-title'),
+            resEmoji: document.getElementById('res-emoji')
+        };
+
+        function selectChar(c, el) {
+            state.char = c;
+            dom.character.innerText = c;
+            document.getElementById('start-char').innerText = c;
+            document.querySelectorAll('#char-selection span').forEach(s => s.style.transform = 'scale(1)');
+            el.style.transform = 'scale(1.3)';
+        }
+
+        function goHome() {
+            state.active = false;
+            dom.startScreen.classList.remove('hidden');
+            dom.resultScreen.classList.add('hidden');
+        }
+
+        function startGame() {
+            state.score = 0; state.count = 0; state.level = 1; state.lives = 3; state.active = true;
+            dom.score.innerText = "0"; dom.level.innerText = "1";
+            dom.startScreen.classList.add('hidden');
+            dom.resultScreen.classList.add('hidden');
+            
+            dom.lives.forEach(h => {
+                h.classList.remove('lost');
+                h.innerText = "❤️";
+            });
+
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            let a, b, op = '+';
+            
+            if (state.level === 1) { 
+                a = Math.floor(Math.random() * 10) + 1; 
+                b = Math.floor(Math.random() * 10) + 1; 
+                state.ans = a + b;
+            } else if (state.level === 2) {
+                a = Math.floor(Math.random() * 20) + 5;
+                b = Math.floor(Math.random() * 15) + 1;
+                op = Math.random() > 0.5 ? '+' : '-';
+                state.ans = op === '+' ? a + b : a - b;
+            } else {
+                if (Math.random() > 0.6) {
+                    a = Math.floor(Math.random() * 5) + 2;
+                    b = Math.floor(Math.random() * 5) + 2;
+                    op = '×';
+                    state.ans = a * b;
+                } else {
+                    a = Math.floor(Math.random() * 50) + 10;
+                    b = Math.floor(Math.random() * 30) + 5;
+                    op = Math.random() > 0.5 ? '+' : '-';
+                    state.ans = op === '+' ? a + b : a - b;
+                }
+            }
+
+            dom.qBox.innerHTML = `${a} <span style="color:#ff6b6b">${op}</span> ${b}`;
+
+            let opts = [state.ans];
+            while(opts.length < 4) {
+                let w = state.ans + (Math.floor(Math.random() * 12) - 6 || 3);
+                if (w >= 0 && !opts.includes(w)) opts.push(w);
+            }
+            opts.sort(() => Math.random() - 0.5);
+
+            dom.ansBtns.forEach((btn, i) => {
+                btn.innerText = opts[i];
+                btn.disabled = false;
+                btn.style.opacity = "1";
+                btn.style.transform = "scale(1)";
+            });
+        }
+
+        function showFeedback(text, isCorrect) {
+            dom.feedback.innerText = text;
+            dom.feedback.style.color = isCorrect ? 'white' : '#ff4757';
+            dom.feedback.style.opacity = '1';
+            dom.feedback.style.transform = 'translateY(-40px) scale(1.2)';
+            setTimeout(() => {
+                dom.feedback.style.opacity = '0';
+                dom.feedback.style.transform = 'translateY(0) scale(1)';
+            }, 800);
+        }
+
+        function updateLives() {
+            state.lives--;
+            const heartToLose = dom.lives[state.lives];
+            heartToLose.classList.add('lost');
+            heartToLose.innerText = "💔";
+            
+            if (state.lives <= 0) {
+                setTimeout(endGame, 600);
+            }
+        }
+
+        function checkAns(btn) {
+            if (!state.active) return;
+            const userAns = parseInt(btn.innerText);
+            dom.ansBtns.forEach(b => b.disabled = true);
+
+            if (userAns === state.ans) {
+                state.score += 10;
+                state.count++;
+                dom.score.innerText = state.score;
+                sounds.correct();
+                showFeedback("HEBAT! ✨", true);
+                dom.character.className = "jump-anim";
+                confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+
+                setTimeout(() => {
+                    dom.character.className = "idle-anim";
+                    if (state.count % 10 === 0) {
+                        state.level++;
+                        dom.level.innerText = state.level;
+                        sounds.levelUp();
+                        showFeedback("LEVEL UP! 🚀", true);
+                    }
+                    if (state.count >= state.maxQuestions) endGame(true);
+                    else nextQuestion();
+                }, 700);
+            } else {
+                sounds.wrong();
+                showFeedback("OPS! 💔", false);
+                dom.character.className = "shake-anim";
+                updateLives();
+                
+                if (state.lives > 0) {
+                    setTimeout(() => {
+                        dom.character.className = "idle-anim";
+                        nextQuestion();
+                    }, 800);
+                }
+            }
+        }
+
+        function endGame(isWin = false) {
+            state.active = false;
+            dom.resultScreen.classList.remove('hidden');
+            document.getElementById('res-score').innerText = state.score;
+            
+            if (isWin) {
+                dom.resTitle.innerText = "SANG JUARA!";
+                dom.resEmoji.innerText = "👑";
+                document.getElementById('res-stars').innerText = "⭐⭐⭐";
+                confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 } });
+            } else {
+                dom.resTitle.innerText = "MAIN LAGI YUK!";
+                dom.resEmoji.innerText = "🏜️";
+                document.getElementById('res-stars').innerText = state.score > 100 ? "⭐⭐" : "⭐";
+                sounds.gameOver();
+            }
+        }
+    </script>
+</body>
+</html>
